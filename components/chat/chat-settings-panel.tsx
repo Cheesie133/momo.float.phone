@@ -1114,6 +1114,41 @@ export function ChatSettingsPanel({
                     )}
                 </div>
 
+                {!session.isGroup && (
+                    <div className="menu-group">
+                        <div className="menu-item" style={{ cursor: "default" }}>
+                            <ChatInfoIcon icon={Ban} color={BINDING_ACCENTS.preset} />
+                            <div className="menu-label-group">
+                                <span className="menu-label">允许角色拉黑我</span>
+                                <span className="menu-desc">开启后角色可在剧烈冲突或触碰底线时拒绝交流</span>
+                            </div>
+                            <div className="menu-right" style={{ pointerEvents: "auto" }}>
+                                <Toggle
+                                    checked={session.allowCharacterBlock ?? false}
+                                    onChange={(checked) => {
+                                        updateSession({ allowCharacterBlock: checked });
+                                    }}
+                                />
+                            </div>
+                        </div>
+                        {session.isBlockedByCharacter && (
+                            <button
+                                className="menu-item"
+                                onClick={() => updateSession({ isBlockedByCharacter: false })}
+                            >
+                                <ChatInfoIcon icon={Sparkles} color={BINDING_ACCENTS.regex} />
+                                <div className="menu-label-group">
+                                    <span className="menu-label text-amber-600 font-medium">已被角色拉黑中</span>
+                                    <span className="menu-desc">点击强制解除拉黑，恢复对话</span>
+                                </div>
+                                <div className="menu-right">
+                                    <span className="ts-12 px-2 py-0.5 bg-amber-500/10 text-amber-600 rounded-full font-medium">解除拉黑</span>
+                                </div>
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 <div className="menu-group">
                     <button className="menu-item" onClick={exportChatRecords} disabled={chatTransferBusy}>
                         <ChatInfoIcon icon={Download} color={BINDING_ACCENTS.preset} />
