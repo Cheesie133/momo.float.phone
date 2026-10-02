@@ -95,6 +95,10 @@ export type ChatSession = {
     groupMutes?: Record<string, string>; // (characterId | "self") → mute expiry ISO
     allowAdminActionsOnUser?: boolean; // characters may kick/mute the user (default off)
     isSpectator?: boolean; // 围观群：用户不在群内，只能生成/线下
+    /** 是否允许角色拉黑用户；开启后角色可根据性格与情绪状态在剧烈冲突时做出拉黑决定。未设置时默认关闭 */
+    allowCharacterBlock?: boolean;
+    /** 当前会话是否正被角色拉黑 */
+    isBlockedByCharacter?: boolean;
 };
 
 export type ChatMessageStatus = "sending" | "sent" | "read" | "failed" | "rejected";

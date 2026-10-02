@@ -4055,6 +4055,25 @@ export function ChatRoom({ session, onBack, onDeleted }: ChatRoomProps) {
         setQuotingMessage(null);
 
         const commitSendText = (currentText: string) => {
+            // 被角色拉黑时的处理：不触发模型生成，将消息标记为 rejected 并弹拒收提示
+            if (!session.isGroup && session.isBlockedByCharacter) {
+                const newMsg = pushChatMessage({
+                    sessionId: session.id,
+                    role: "user",
+                    content: currentText,
+                    status: "rejected",
+                    mediaType: isQuoting ? "quote" : undefined,
+                    mediaData: isQuoting ? quoteData : undefined,
+                });
+                const rejectNotice = pushChatMessage({
+                    sessionId: session.id,
+                    role: "system",
+                    content: "消息已发出，但被对方拒收了。",
+                });
+                setMessages(prev => [...prev, newMsg, rejectNotice]);
+                return;
+            }
+
             // 掷骰子：整条消息就是骰子图标时，发骰子气泡（内容仅图标），
             // 点数由系统旁白公布——避免结果挂在 user 消息上被角色模仿格式
             const diceOnly = !isQuoting && isDiceOnlyMessage(currentText);

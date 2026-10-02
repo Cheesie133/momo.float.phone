@@ -40,7 +40,7 @@ export type ActionContext = {
 
 // ── Parser ──
 
-const ACTION_TAGS = ["朋友圈", "群消息", "评论", "回复", "消息", "私信"] as const;
+const ACTION_TAGS = ["朋友圈", "群消息", "评论", "回复", "消息", "私信", "拉黑", "解除拉黑"] as const;
 
 function normalizeActionQuotes(text: string): string {
     return text.replace(/[\u201C\u201D\u2018\u2019\u300C\u300D]/g, "\"");
@@ -178,7 +178,7 @@ export function parseActionTags(text: string): {
  */
 const KNOWN_ACTION_TAGS = [
     // 中文方括号格式
-    "朋友圈", "评论", "回复", "消息", "群消息", "私信",
+    "朋友圈", "评论", "回复", "消息", "群消息", "私信", "拉黑", "解除拉黑",
     // XML 格式 (AI 偶尔幻觉输出)
     "action_chat_message", "action_moments_post",
     "action_comment", "action_reply",
@@ -246,6 +246,12 @@ export async function dispatchActions(
                     break;
                 case "群消息":
                     await dispatchGroupChatMessage(action, effectiveCtx);
+                    break;
+                case "拉黑":
+                    await dispatchCharacterBlockUser(action, effectiveCtx, true);
+                    break;
+                case "解除拉黑":
+                    await dispatchCharacterBlockUser(action, effectiveCtx, false);
                     break;
             }
         } catch (err) {
@@ -491,5 +497,32 @@ function findCommentByContent(keyword: string, viewerCharacterId: string): { pos
 function dispatchMomentsUpdated(): void {
     if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("moments-updated"));
+    }
+}
+
+async function dispatchCharacterBlockUser(
+    action: ActionTag,
+    context: ActionContext,
+    shouldBlock: boolean
+): Promise<void> {
+    const contacts = loadChatContacts();
+    const contact = contacts.find(c => c.characterId === context.characterId);
+    if (!contact) return;
+
+    const sessions = loadChatSessions();
+    const session = sessions.find(s => s.contactId === contact.id && !s.isGroup);
+    if (!session) return;
+
+    // Check setting: only proceed if allowCharacterBlock is enabled (or clearing block)
+    if (shouldBlock && !session.allowCharacterBlock) {
+        console.log("[ActionParser]", `SKIP block action: character ${context.characterId} session has allowCharacterBlock=false`);
+        return;
+    }
+
+    session.isBlockedByCharacter = shouldBlock;
+    saveChatSessions(sessions);
+
+    if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("chat-session-updated", { detail: { sessionId: session.id } }));
     }
 }
